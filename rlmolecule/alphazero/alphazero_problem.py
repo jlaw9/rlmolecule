@@ -1,7 +1,7 @@
 import os
 import random
 from abc import abstractmethod
-from typing import Optional
+from typing import Generator, Optional
 
 import sqlalchemy
 
@@ -80,7 +80,7 @@ class AlphaZeroProblem(MCTSProblem):
         self.session.add(record)
         self.session.commit()
 
-    def iter_recent_games(self) -> (str, 'np.ndarray', float):
+    def iter_recent_games(self) -> Generator[(str, float, 'np.ndarray')]:
         """Iterate over randomly chosen positions in games from the replay buffer
 
         :returns: a generator of (serialized_parent, visit_probabilities, scaled_reward) pairs
