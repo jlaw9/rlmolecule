@@ -42,6 +42,7 @@ class Submission_Script:
         self.rollout_ntasks_per_node = rollout_ntasks_per_node
         self.policy_nodes = policy_nodes
         self.policy_gpus = policy_gpus
+        self.kwargs = kwargs
 
     def setup_hpc_submission_scripts(self, submit=False):
         if self.hpc_env == "eagle":

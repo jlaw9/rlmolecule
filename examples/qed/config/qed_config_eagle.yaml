@@ -33,20 +33,21 @@ run_config:
 problem_config:
     max_atoms: 200
     min_atoms: 1
+    policy_checkpoint_dir: 'policy_checkpoints'
 
 # Parameters for training the policy model
 alphazero_config:
-    # TODO use these parameters and add the rest
     ranked_reward_alpha: 0.75
-    reward_buffer_max_size: 250
-    reward_buffer_min_size: 50
-    policy_buffer_max_size: 256
-    policy_buffer_min_size: 128
+    reward_buffer_max_size: 50
+    reward_buffer_min_size: 10
+    # TODO use these parameters and add the rest
+    #policy_buffer_max_size: 256
+    #policy_buffer_min_size: 128
 
 mcts_config:
-    # TODO use these parameters and add the rest
-    num_mcts_samples: 256
-    max_depth: 1000000
+    num_mcts_samples: 500
+    # TODO use this parameter and add the rest
+    #max_depth: 1000000
     
 
 # Database settings for the Object Relational Model (ORM)

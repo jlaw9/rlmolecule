@@ -47,8 +47,9 @@ def construct_problem(run_config):
                 return qed(state.molecule), {'forced_terminal': True, 'smiles': state.smiles}
             return 0.0, {'forced_terminal': False, 'smiles': state.smiles}
 
-    config = MoleculeConfig(max_atoms=run_config.problem_config.get('max_atoms',25),
-                            min_atoms=run_config.problem_config.get('min_atoms',1),
+    prob_config = run_config.problem_config
+    config = MoleculeConfig(max_atoms=prob_config.get('max_atoms',25),
+                            min_atoms=prob_config.get('min_atoms',1),
                             tryEmbedding=True,
                             sa_score_threshold=4.,
                             stereoisomers=False)
@@ -60,12 +61,13 @@ def construct_problem(run_config):
 
     run_id = run_config.run_id
 
+    az_config = run_config.alphazero_config
     reward_factory = RankedRewardFactory(
         engine=engine,
         run_id=run_id,
-        reward_buffer_min_size=10,
-        reward_buffer_max_size=50,
-        ranked_reward_alpha=0.75
+        reward_buffer_min_size=az_config.get('reward_buffer_min_size',10),
+        reward_buffer_max_size=az_config.get('reward_buffer_max_size',50),
+        ranked_reward_alpha=az_config.get('ranked_reward_alpha',0.75)
     )
 
     problem = QEDOptimizationProblem(
@@ -77,7 +79,8 @@ def construct_problem(run_config):
         num_heads=2,
         num_messages=1,
         min_buffer_size=15,
-        policy_checkpoint_dir='policy_checkpoints'
+        policy_checkpoint_dir=prob_config.get(
+            'policy_checkpoints_dir', 'policy_checkpoints')
     )
 
     return problem
@@ -87,7 +90,8 @@ def run_games(run_config):
     from rlmolecule.alphazero.alphazero import AlphaZero
     game = AlphaZero(construct_problem(run_config))
     while True:
-        path, reward = game.run(num_mcts_samples=50)
+        num_mcts_samples = run_config.mcts_config.get('num_mcts_samples',50)
+        path, reward = game.run(num_mcts_samples=num_mcts_samples)
         #logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
         logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
 

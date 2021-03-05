@@ -24,6 +24,7 @@ class Run_Config:
         self.problem_config = self.config_map.get('problem_config',{})
         # Settings for training the policy model
         self.alphazero_config = self.config_map.get('alphazero_config',{})
+        self.mcts_config = self.config_map.get('mcts_config',{})
 
         # As a convenience, I used <config_file> as a placeholder to that own file's path.
         # Replace it here:
@@ -55,10 +56,10 @@ class Run_Config:
         used by the policy model and game runner
         """
         drivername = kwargs.get('drivername', 'sqlite')
-        dbname = kwargs.get('dbname', 'game_data.db')
+        db_file = kwargs.get('db_file', 'game_data.db')
         if drivername == 'sqlite':
             engine = create_engine(
-                f'sqlite:///{dbname}',
+                f'sqlite:///{db_file}',
                 # The 'check_same_thread' option only works for sqlite
                 connect_args={'check_same_thread': False},
                 execution_options={"isolation_level": "AUTOCOMMIT"})
