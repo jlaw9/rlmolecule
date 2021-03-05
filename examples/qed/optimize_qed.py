@@ -14,7 +14,6 @@ import time
 
 import rdkit
 from rdkit.Chem.QED import qed
-from sqlalchemy import create_engine
 
 from rlmolecule.config import Config
 
@@ -123,7 +122,8 @@ def setup_argparser(parser=None):
         parser = argparse.ArgumentParser(
             description='Run the QED optimization. Default is to run the script locally')
 
-    parser.add_argument('--config', type=pathlib.Path, help='Configuration file')
+    parser.add_argument('--config', type=pathlib.Path,
+                        help='Configuration file')
     parser.add_argument('--train-policy', action="store_true", default=False,
                         help='Train the policy model only (on GPUs)')
     parser.add_argument('--rollout', action="store_true", default=False,

@@ -7,33 +7,31 @@
 
 
 run_config:
-    run_id: 'qed_example2'
+    run_id: 'qed_example'
     # If running locally, specify the script here:
-    start_script: "optimize_qed.py --config qed_config_eagle.yaml"
+    #start_script: "optimize_qed.py --config <config_file>"
     # Settings for a high performance computing (HPC) environment
     # where the policy is trained on GPUs and the rollout is done on CPUs
-#    hpc_config: 
-#        start_policy_script: "optimize_qed.py --config qed_config.yaml --train-policy"
-#        start_rollout_script: "optimize_qed.py --config qed_config.yaml --rollout"
-#        working_dir: "/scratch/jlaw/rlmolecule/qed/"
-#        time: "4:00:00"
-#        account: "rlmolecule"
-#        job_name: "qed_example"
-#        rollout_nodes: 2
-#        rollout_ntasks_per_node: 6
-#        policy_nodes: 1
-#        policy_gpus: 2
-#        # python environment used for the GPU nodes
-#        policy_env: "source /nopt/nrel/apps/anaconda/5.3/etc/profile.d/conda.sh; conda activate /projects/rlmolecule/pstjohn/envs/tf2_gpu"
-#        # python environment used for the CPU nodes
-#        rollout_env: "source /nopt/nrel/apps/anaconda/5.3/etc/profile.d/conda.sh; conda activate /projects/rlmolecule/pstjohn/envs/tf2_cpu"
+    hpc_config: 
+        # <config_file> will be replaced by the path to this file
+        start_policy_script: "optimize_qed.py --config <config_file> --train-policy"
+        start_rollout_script: "optimize_qed.py --config <config_file> --rollout"
+        working_dir: "/scratch/${USER}/rlmolecule/qed/"
+        time: "30:00"
+        account: "rlmolecule"
+        job_name: "qed_example"
+        rollout_nodes: 2
+        rollout_ntasks_per_node: 6
+        policy_nodes: 1
+        policy_gpus: 2
+        # python environment used for the GPU nodes
+        policy_env: "source /nopt/nrel/apps/anaconda/5.3/etc/profile.d/conda.sh; conda activate /projects/rlmolecule/pstjohn/envs/tf2_gpu"
+        # python environment used for the CPU nodes
+        rollout_env: "source /nopt/nrel/apps/anaconda/5.3/etc/profile.d/conda.sh; conda activate /projects/rlmolecule/pstjohn/envs/tf2_cpu"
 
 # Parameters for setting up the problem
-problem_config:
-    # size of the hallway
-    size: 5
-    # max # steps the walker is allowed to take
-    max_steps: 32
+#problem_config:
+    # TODO
 
 # Parameters for training the policy model
 alphazero_config:

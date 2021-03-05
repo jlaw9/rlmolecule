@@ -3,6 +3,7 @@
 
 import argparse
 import pathlib
+import os
 import sys
 import subprocess
 
@@ -30,6 +31,7 @@ class Submission_Script:
         self.job_name = job_name
         self.out_file = out_file
         self.working_dir = working_dir
+        os.makedirs(self.working_dir, exist_ok=True)
         self.time = time
         self.account = account
         self.start_policy_script = start_policy_script

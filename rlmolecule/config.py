@@ -1,6 +1,7 @@
 """ Utilities for loading training and game parameters, and for setting up the sql database
 """
 
+import os
 import yaml
 from sqlalchemy import create_engine
 
@@ -8,20 +9,34 @@ from sqlalchemy import create_engine
 class Config:
     def __init__(self, config_file, **kwargs):
 
-        with open(config_file, 'r') as conf:
-            self.config_map = yaml.load(conf)
+        with open(config_file, 'r') as f:
+            #self.config_map = yaml.safe_load(f)
+            # neat trick from here: https://stackoverflow.com/a/60283894/7483950
+            self.config_map = yaml.safe_load(os.path.expandvars(f.read()))
 
         # TODO overwrite settings in the config file if they were passed in via kwargs
         # Settings for setting up scripts to run everything
-        self.run_config = self.config_map['run_config']
+        self.run_config = self.config_map.get('run_config',{})
         self.hpc_config = self.run_config.get('hpc_config')
-        self.run_id = self.run_config['run_id']
+        self.run_id = self.run_config.get('run_id','test')
 
         # Settings specific to the problem at hand
-        self.problem_config = self.config_map['problem_config']
+        self.problem_config = self.config_map.get('problem_config',{})
         # Settings for training the policy model
-        self.alphazero_config = self.config_map['alphazero_config']
+        self.alphazero_config = self.config_map.get('alphazero_config',{})
 
+        # As a convenience, I used <config_file> as a placeholder to that own file's path.
+        # Replace it here:
+        self.replace_placeholder(self.run_config, '<config_file>', str(config_file))
+
+    def replace_placeholder(self, curr_dict, placeholder, replacement):
+        """ Recursively replace the placeholder string in-place in the dictionary
+        """
+        for key, val in curr_dict.items():
+            if isinstance(val, str):
+                curr_dict[key] = val.replace(placeholder, replacement)
+            elif isinstance(val, dict):
+                self.replace_placeholder(val, placeholder, replacement)
 
 # def load_config_file(config_file):
 #     with open(config_file, 'r') as conf:
