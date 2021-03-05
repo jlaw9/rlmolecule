@@ -1,3 +1,13 @@
+""" Optimize the Quantitative Estimate of Drug-likeness (QED)
+See https://www.rdkit.org/docs/source/rdkit.Chem.QED.html
+Starting point: a single carbon (C)
+  - actions: add a bond or an atom
+  - state: molecule state
+  - reward: 0, unless a terminal state is reached, then the qed estimate of the molecule
+"""
+
+import argparse
+import pathlib
 import logging
 import multiprocessing
 import time
@@ -6,11 +16,13 @@ import rdkit
 from rdkit.Chem.QED import qed
 from sqlalchemy import create_engine
 
-# logging.basicConfig(level=logging.INFO)
+from rlmolecule.config import Config
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def construct_problem():
+def construct_problem(run_config):
     # We have to delay all importing of tensorflow until the child processes launch,
     # see https://github.com/tensorflow/tensorflow/issues/8220. We should be more careful about where / when we
     # import tensorflow, especially if there's a chance we'll use tf.serving to do the policy / reward evaluations on
@@ -42,11 +54,12 @@ def construct_problem():
                             sa_score_threshold=4.,
                             stereoisomers=False)
 
-    engine = create_engine(f'sqlite:///qed_data.db',
-                           connect_args={'check_same_thread': False},
-                           execution_options = {"isolation_level": "AUTOCOMMIT"})
+    engine = run_config.start_engine()
+    #engine = create_engine(f'sqlite:///qed_data.db',
+    #                       connect_args={'check_same_thread': False},
+    #                       execution_options = {"isolation_level": "AUTOCOMMIT"})
 
-    run_id = 'qed_example'
+    run_id = run_config.run_id
 
     reward_factory = RankedRewardFactory(
         engine=engine,
@@ -71,24 +84,25 @@ def construct_problem():
     return problem
 
 
-def run_games():
+def run_games(config):
     from rlmolecule.alphazero.alphazero import AlphaZero
-    game = AlphaZero(construct_problem())
+    game = AlphaZero(construct_problem(config))
     while True:
         path, reward = game.run(num_mcts_samples=50)
+        #logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
         logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
 
 
-def train_model():
-    construct_problem().train_policy_model(steps_per_epoch=100,
+def train_model(config):
+    construct_problem(config).train_policy_model(steps_per_epoch=100,
                                            game_count_delay=20,
                                            verbose=2)
 
 
-def monitor():
+def monitor(config):
 
     from rlmolecule.sql.tables import RewardStore
-    problem = construct_problem()
+    problem = construct_problem(config)
 
     while True:
         best_reward = problem.session.query(RewardStore) \
@@ -104,19 +118,43 @@ def monitor():
         time.sleep(5)
 
 
+def setup_argparser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(
+            description='Run the QED optimization. Default is to run the script locally')
+
+    parser.add_argument('--config', type=pathlib.Path, help='Configuration file')
+    parser.add_argument('--train-policy', action="store_true", default=False,
+                        help='Train the policy model only (on GPUs)')
+    parser.add_argument('--rollout', action="store_true", default=False,
+                        help='Run the game simulations only (on CPUs)')
+
+    return parser
+
+
 if __name__ == "__main__":
+    parser = setup_argparser()
+    args = parser.parse_args()
 
-    jobs = [multiprocessing.Process(target=monitor)]
-    jobs[0].start()
-    time.sleep(1)
+    config = Config(args.config)
 
-    for i in range(5):
-        jobs += [multiprocessing.Process(target=run_games)]
+    if args.train_policy:
+        train_model(config)
+    elif args.rollout:
+        run_games(config)
+    else:
+        # run the jobs locally
+        jobs = [multiprocessing.Process(target=monitor, args=(config,))]
+        jobs[0].start()
+        time.sleep(1)
 
-    jobs += [multiprocessing.Process(target=train_model)]
+        for i in range(5):
+            jobs += [multiprocessing.Process(target=run_games, args=(config,))]
 
-    for job in jobs[1:]:
-        job.start()
+        jobs += [multiprocessing.Process(target=train_model, args=(config,))]
 
-    for job in jobs:
-        job.join(300)
+        for job in jobs[1:]:
+            job.start()
+
+        for job in jobs:
+            job.join(300)
