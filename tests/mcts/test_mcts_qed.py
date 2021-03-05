@@ -7,7 +7,7 @@ import pytest
 from rlmolecule.alphazero.alphazero import AlphaZero
 from rlmolecule.mcts.mcts import MCTS
 from rlmolecule.molecule.molecule_config import MoleculeConfig
-from tests.qed_optimization_problem import QEDOptimizationProblem, QEDWithMoleculePolicy
+from tests.qed_optimization_problem import QEDWithMoleculePolicy, QEDWithRandomPolicy
 
 
 @pytest.fixture
@@ -20,9 +20,9 @@ def problem(request, engine):
                             stereoisomers=False)
 
     if name == 'random':
-        return QEDOptimizationProblem(engine, config)
+        return QEDWithRandomPolicy(config=config, engine=engine)
     if name == 'MoleculePolicy':
-        return QEDWithMoleculePolicy(engine, config, features=8, num_heads=2, num_messages=1)
+        return QEDWithMoleculePolicy(config=config, engine=engine, features=8, num_heads=2, num_messages=1)
 
 
 @pytest.fixture
@@ -41,6 +41,48 @@ def setup_game(solver, problem):
     return game, root
 
 
+@pytest.mark.parametrize('solver,problem', [("MCTS", "random")], indirect=True)
+def test_mcts_ucb_score(solver, problem):
+    game, root = setup_game(solver, problem)
+    game._evaluate([root])
+    child = root.children[0]
+
+    root.update(1.0)
+    assert game._ucb_score(root, child) == math.inf
+    assert root.visit_count == 1
+    assert root.value == pytest.approx(1.)
+
+    root.update(1.0)
+    assert game._ucb_score(root, child) == math.inf
+    assert root.visit_count == 2
+    assert root.value == pytest.approx(1.)
+
+    child.update(0.0)
+    child.update(1.0)
+
+    assert game._ucb_score(root, child) == pytest.approx(
+        0.5 + game.ucb_constant * math.sqrt(math.log(2) / 2))
+
+
+@pytest.mark.parametrize('solver,problem', [("AlphaZero", "random")], indirect=True)
+def test_az_ucb_score(solver, problem):
+    game, root = setup_game(solver, problem)
+    game._evaluate([root])
+    child = root.children[0]
+
+    child.value_sum = 2.
+    child.visit_count = 3
+
+    root.value_sum = 3.
+    root.visit_count = 4
+
+    pb_c = np.log((root.visit_count + game._pb_c_base + 1) / game._pb_c_base) + game._pb_c_init
+    pb_c *= np.sqrt(root.visit_count) / (child.visit_count + 1)
+
+    assert game._ucb_score(root, child) == pytest.approx(
+        pb_c * root.child_priors[child] + child.value)
+
+
 @pytest.mark.parametrize('solver,problem',
                          [("MCTS", "random"),
                           ("AlphaZero", "random"),
@@ -56,26 +98,6 @@ class TestMCTSwithMoleculeState:
         assert problem.reward_wrapper(root.state).raw_reward == 0.0
         assert problem.reward_wrapper(root.children[-1].state).raw_reward > 0.01
         assert problem.reward_wrapper(root.state).raw_reward == 0.0
-
-    def test_ucb_score(self, solver, problem):
-        game, root = setup_game(solver, problem)
-        game._expand(root)
-        child = root.children[0]
-
-        root.update(2.0)
-        assert game._ucb_score(root, child) == math.inf
-        assert root.visit_count == 1
-        assert root.value == pytest.approx(2.)
-
-        root.update(4.0)
-        assert game._ucb_score(root, child) == math.inf
-        assert root.visit_count == 2
-        assert root.value == pytest.approx(3.)
-
-        child.update(-1.0)
-        child.update(0.0)
-        if solver is MCTS:
-            assert game._ucb_score(root, child) == pytest.approx(0.3325546111576978)
 
     def test_get_successors(self, solver, problem):
         game, root = setup_game(solver, problem)
