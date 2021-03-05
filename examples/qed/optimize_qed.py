@@ -15,7 +15,7 @@ import time
 import rdkit
 from rdkit.Chem.QED import qed
 
-from rlmolecule.config import Config
+from examples.run_config import Run_Config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,8 +47,8 @@ def construct_problem(run_config):
                 return qed(state.molecule), {'forced_terminal': True, 'smiles': state.smiles}
             return 0.0, {'forced_terminal': False, 'smiles': state.smiles}
 
-    config = MoleculeConfig(max_atoms=25,
-                            min_atoms=1,
+    config = MoleculeConfig(max_atoms=run_config.problem_config.get('max_atoms',25),
+                            min_atoms=run_config.problem_config.get('min_atoms',1),
                             tryEmbedding=True,
                             sa_score_threshold=4.,
                             stereoisomers=False)
@@ -83,25 +83,24 @@ def construct_problem(run_config):
     return problem
 
 
-def run_games(config):
+def run_games(run_config):
     from rlmolecule.alphazero.alphazero import AlphaZero
-    game = AlphaZero(construct_problem(config))
+    game = AlphaZero(construct_problem(run_config))
     while True:
         path, reward = game.run(num_mcts_samples=50)
         #logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
         logger.info(f'Game Finished -- Reward {reward.raw_reward:.3f} -- Final state {path[-1][0]}')
 
 
-def train_model(config):
-    construct_problem(config).train_policy_model(steps_per_epoch=100,
-                                           game_count_delay=20,
-                                           verbose=2)
+def train_model(run_config):
+    construct_problem(run_config).train_policy_model(
+        steps_per_epoch=100, game_count_delay=20, verbose=2)
 
 
-def monitor(config):
+def monitor(run_config):
 
     from rlmolecule.sql.tables import RewardStore
-    problem = construct_problem(config)
+    problem = construct_problem(run_config)
 
     while True:
         best_reward = problem.session.query(RewardStore) \
@@ -136,22 +135,22 @@ if __name__ == "__main__":
     parser = setup_argparser()
     args = parser.parse_args()
 
-    config = Config(args.config)
+    run_config = Run_Config(args.config)
 
     if args.train_policy:
-        train_model(config)
+        train_model(run_config)
     elif args.rollout:
-        run_games(config)
+        run_games(run_config)
     else:
         # run the jobs locally
-        jobs = [multiprocessing.Process(target=monitor, args=(config,))]
+        jobs = [multiprocessing.Process(target=monitor, args=(run_config,))]
         jobs[0].start()
         time.sleep(1)
 
         for i in range(5):
-            jobs += [multiprocessing.Process(target=run_games, args=(config,))]
+            jobs += [multiprocessing.Process(target=run_games, args=(run_config,))]
 
-        jobs += [multiprocessing.Process(target=train_model, args=(config,))]
+        jobs += [multiprocessing.Process(target=train_model, args=(run_config,))]
 
         for job in jobs[1:]:
             job.start()

@@ -6,7 +6,7 @@ import yaml
 from sqlalchemy import create_engine
 
 
-class Config:
+class Run_Config:
     def __init__(self, config_file, **kwargs):
 
         with open(config_file, 'r') as f:
@@ -45,7 +45,7 @@ class Config:
 #     return config_map
 
     def start_engine(self):
-        self.engine = Config.start_db_engine(
+        self.engine = Run_Config.start_db_engine(
             **self.config_map.get('sql_database',{}))
         return self.engine
 
@@ -63,7 +63,7 @@ class Config:
                 connect_args={'check_same_thread': False},
                 execution_options={"isolation_level": "AUTOCOMMIT"})
         else:
-            engine = Config.start_server_db_engine(**kwargs)
+            engine = Run_Config.start_server_db_engine(**kwargs)
 
         return engine
 

@@ -7,7 +7,7 @@ import os
 import sys
 import subprocess
 
-from rlmolecule.config import Config
+from examples.run_config import Run_Config
 
 
 class Submission_Script:
@@ -106,7 +106,7 @@ srun --pack-group=1 \
 
 def run(config_file, submit=False, **kwargs):
 
-    config = Config(config_file, **kwargs)
+    config = Run_Config(config_file, **kwargs)
 
     if config.hpc_config is not None:
         ss = Submission_Script(**config.hpc_config)

@@ -7,7 +7,7 @@
 
 
 run_config:
-    run_id: 'qed_example'
+    run_id: 'qed_example_eagle'
     # If running locally, specify the script here:
     #start_script: "optimize_qed.py --config <config_file>"
     # Settings for a high performance computing (HPC) environment
@@ -17,10 +17,10 @@ run_config:
         start_policy_script: "optimize_qed.py --config <config_file> --train-policy"
         start_rollout_script: "optimize_qed.py --config <config_file> --rollout"
         working_dir: "/scratch/${USER}/rlmolecule/qed/"
-        time: "30:00"
+        time: "1:00:00"
         account: "rlmolecule"
         job_name: "qed_example"
-        rollout_nodes: 2
+        rollout_nodes: 10
         rollout_ntasks_per_node: 6
         policy_nodes: 1
         policy_gpus: 2
@@ -30,12 +30,13 @@ run_config:
         rollout_env: "source /nopt/nrel/apps/anaconda/5.3/etc/profile.d/conda.sh; conda activate /projects/rlmolecule/pstjohn/envs/tf2_cpu"
 
 # Parameters for setting up the problem
-#problem_config:
-    # TODO
+problem_config:
+    max_atoms: 200
+    min_atoms: 1
 
 # Parameters for training the policy model
 alphazero_config:
-    # TODO add the rest of the parameters
+    # TODO use these parameters and add the rest
     ranked_reward_alpha: 0.75
     reward_buffer_max_size: 250
     reward_buffer_min_size: 50
@@ -43,7 +44,7 @@ alphazero_config:
     policy_buffer_min_size: 128
 
 mcts_config:
-    # TODO add the rest of the parameters
+    # TODO use these parameters and add the rest
     num_mcts_samples: 256
     max_depth: 1000000
     

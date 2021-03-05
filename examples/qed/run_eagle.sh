@@ -1,1 +1,1 @@
-python ../../rlmolecule/run.py qed_config_eagle.yaml
+python ../run.py config/qed_config_eagle.yaml
