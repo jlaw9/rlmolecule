@@ -85,7 +85,8 @@ class Run_Config:
         passwd = ":"+str(passwd) if passwd is not None else ""
 
         engine_str = f'{drivername}://{user}{passwd}@{host}{port}/{dbname}'
-        print(f'connecting to database using: {engine_str}')
+        # don't print since it has the user's password
+        #print(f'connecting to database using: {engine_str}')
         engine = create_engine(
             engine_str, execution_options={"isolation_level": "AUTOCOMMIT"})
         return engine
