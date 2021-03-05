@@ -1,0 +1,3 @@
+# TensorFlow gives the error "cannot convert a symbolic Tensor to a numpy array. This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported"
+# Downgrading numpy fixes the issue. See https://stackoverflow.com/a/65993776/7483950
+numpy==1.19.5
