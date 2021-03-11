@@ -1,3 +1,5 @@
+import argparse
+import pathlib
 import logging
 import time
 from typing import Tuple
@@ -60,9 +62,20 @@ def construct_problem():
 
     from rlmolecule.tree_search.reward import RankedRewardFactory
 
-    engine = create_engine(f'sqlite:///hallway_data.db',
-                           connect_args={'check_same_thread': False},
-                           execution_options = {"isolation_level": "AUTOCOMMIT"})
+    #engine = create_engine(f'sqlite:///hallway_data.db',
+    #                       connect_args={'check_same_thread': False},
+    #                       execution_options = {"isolation_level": "AUTOCOMMIT"})
+    dbname = "bde"
+    port = "5432"
+    host = "yuma.hpc.nrel.gov"
+    user = "rlops"
+    # read the password from a file
+    passwd_file = '/projects/rlmolecule/rlops_pass'
+    with open(passwd_file, 'r') as f:
+        passwd = f.read().strip()
+    drivername = "postgresql+psycopg2"
+    engine_str = f'{drivername}://{user}:{passwd}@{host}:{port}/{dbname}'
+    engine = create_engine(engine_str, execution_options={"isolation_level": "AUTOCOMMIT"})
 
     run_id = "hallway_example"
 
@@ -129,9 +142,29 @@ def monitor():
         time.sleep(5)
 
 
-if __name__ == "__main__":
+def setup_argparser():
+    parser = argparse.ArgumentParser(
+        description='Solve the Hallway problem (move from one side of the hallway to the other). ' +
+                'Default is to run multiple games and training using multiprocessing')
 
-    import multiprocessing
+    parser.add_argument('--train-policy', action="store_true", default=False,
+                        help='Train the policy model only (on GPUs)')
+    parser.add_argument('--rollout', action="store_true", default=False,
+                        help='Run the game simulations only (on CPUs)')
+
+    return parser
+
+
+if __name__ == "__main__":
+    parser = setup_argparser()
+    args = parser.parse_args()
+
+    if args.train_policy:
+        train_model()
+    elif args.rollout:
+        run_games()
+    else:
+        import multiprocessing
 
     jobs = [multiprocessing.Process(target=monitor)]
     jobs[0].start()
