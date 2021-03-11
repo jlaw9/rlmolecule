@@ -166,18 +166,18 @@ if __name__ == "__main__":
     else:
         import multiprocessing
 
-    jobs = [multiprocessing.Process(target=monitor)]
-    jobs[0].start()
-    time.sleep(1)
+        jobs = [multiprocessing.Process(target=monitor)]
+        jobs[0].start()
+        time.sleep(1)
 
-    for i in range(5):
-        jobs += [multiprocessing.Process(target=run_games)]
+        for i in range(5):
+            jobs += [multiprocessing.Process(target=run_games)]
 
-    jobs += [multiprocessing.Process(target=train_model)]
+        jobs += [multiprocessing.Process(target=train_model)]
 
-    for job in jobs[1:]:
-        job.start()
+        for job in jobs[1:]:
+            job.start()
 
-    for job in jobs:
-        job.join(300)
+        for job in jobs:
+            job.join(300)
 
